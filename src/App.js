@@ -303,13 +303,13 @@ export default function ShonenHQ() {
     } else if (!weightLog) {
       setWeightLog([{ date:"Start", w: startW }]);
     }
-  }, [profile]);
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save all state
   useEffect(() => { save("shq_weight", weight); }, [weight]);
   useEffect(() => { if (weightLog) save("shq_weightLog", weightLog); }, [weightLog]);
   useEffect(() => { save("shq_attrs", attrs); }, [attrs]);
-  useEffect(() => { save("shq_xp", xp); }, [xp]);
+  useEffect(() => { save("shq_xp", xp); }, [xp]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { save("shq_level", level); }, [level]);
   useEffect(() => { save("shq_checkedEx", checkedEx); }, [checkedEx]);
   useEffect(() => { save("shq_checkedMeals", checkedMeals); }, [checkedMeals]);
@@ -341,7 +341,7 @@ export default function ShonenHQ() {
       setTimeout(() => setShowLevelUp(false), 3000);
       pushNotif(`⬆️ LEVEL UP → ${getNinjaTier(nl).name}!`, "#F59E0B");
     }
-  }, [xp]);
+  }, [xp]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show setup screen if no profile — AFTER all hooks
   if (!profile) return <SetupScreen onComplete={p => { setProfile(p); setWeight(p.startW); setWeightInput(String(p.startW)); setWeightLog([{date:"Start",w:p.startW}]); }} />;
