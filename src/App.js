@@ -1,0 +1,753 @@
+import { useState, useEffect, useRef } from "react";
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap');
+  @keyframes flicker { 0%,100%{opacity:1;text-shadow:0 0 10px #FF6B00,0 0 20px #FF6B00} 50%{opacity:0.85;text-shadow:0 0 5px #FF6B00} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-2px)} 80%{transform:translateX(2px)} }
+  @keyframes popIn { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+  @keyframes glow { 0%,100%{box-shadow:0 0 8px #FF6B0066} 50%{box-shadow:0 0 20px #FF6B00AA,0 0 40px #FF6B0044} }
+  @keyframes float { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-6px)} }
+  @keyframes auraFloat { 0%,100%{transform:scale(1);opacity:0.6} 50%{transform:scale(1.08);opacity:1} }
+  @keyframes sparkle { 0%{opacity:0;transform:scale(0) rotate(0deg)} 50%{opacity:1;transform:scale(1) rotate(180deg)} 100%{opacity:0;transform:scale(0) rotate(360deg)} }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes weaponGlow { 0%,100%{filter:drop-shadow(0 0 3px #FF6B00)} 50%{filter:drop-shadow(0 0 10px #FF6B00) drop-shadow(0 0 20px #FFB347)} }
+  @keyframes legendAura { 0%,100%{transform:scale(1) rotate(0deg);opacity:0.8} 50%{transform:scale(1.15) rotate(180deg);opacity:1} }
+  @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .stat-bar { transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+  .nav-btn:hover { background: rgba(255,107,0,0.12) !important; }
+  .log-btn:active { animation: shake 0.3s ease; }
+  .ninja-float { animation: float 3s ease-in-out infinite; }
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+`;
+
+// ── NINJA TIERS ───────────────────────────────────────────────────────────────
+const NINJA_TIERS = [
+  { minLevel:1,  name:"Genin",   rankColor:"#6B7280", aura:null,        particles:false, weaponColor:"#8B7355", cloakColor:"#2A2A2A", bandanaColor:"#1A5C2A" },
+  { minLevel:3,  name:"Chunin",  rankColor:"#3B82F6", aura:"#3B82F655", particles:false, weaponColor:"#6B9ED4", cloakColor:"#1A2A4A", bandanaColor:"#1A4080" },
+  { minLevel:6,  name:"Jonin",   rankColor:"#8B5CF6", aura:"#8B5CF644", particles:true,  weaponColor:"#A78BFA", cloakColor:"#2A1A4A", bandanaColor:"#5B21B6" },
+  { minLevel:10, name:"ANBU",    rankColor:"#EF4444", aura:"#EF444433", particles:true,  weaponColor:"#EF4444", cloakColor:"#1A0A0A", bandanaColor:"#7F1D1D" },
+  { minLevel:15, name:"Kage",    rankColor:"#F59E0B", aura:"#F59E0B55", particles:true,  weaponColor:"#F59E0B", cloakColor:"#1A1200", bandanaColor:"#92400E" },
+  { minLevel:20, name:"LEGEND",  rankColor:"#FF6B00", aura:"#FF6B00AA", particles:true,  weaponColor:"#FF6B00", cloakColor:"#0A0000", bandanaColor:"#CC3300" },
+];
+function getNinjaTier(level) {
+  let t = NINJA_TIERS[0];
+  for (const tier of NINJA_TIERS) { if (level >= tier.minLevel) t = tier; }
+  return t;
+}
+
+// ── NINJA AVATAR SVG ──────────────────────────────────────────────────────────
+function NinjaAvatar({ level, size = 160 }) {
+  const tier = getNinjaTier(level);
+  const s = size, cx = s / 2;
+  const hasWeapon = level >= 3, hasDual = level >= 10, hasCape = level >= 6;
+  const hasHelmet = level >= 15, hasMask = level >= 10, hasAura = level >= 3, hasScar = level >= 6;
+  return (
+    <div style={{ position:"relative", width:s, height:s, margin:"0 auto" }}>
+      {level >= 15 && <div style={{ position:"absolute", inset:-10, borderRadius:"50%", border:`2px solid ${tier.rankColor}`, animation:"legendAura 2s ease-in-out infinite", opacity:0.5 }} />}
+      {level >= 20 && <div style={{ position:"absolute", inset:-20, borderRadius:"50%", border:`1px solid ${tier.rankColor}`, animation:"legendAura 3s ease-in-out infinite reverse", opacity:0.3 }} />}
+      {hasAura && <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:`radial-gradient(ellipse at center, ${tier.aura} 0%, transparent 70%)`, animation:"auraFloat 2.5s ease-in-out infinite" }} />}
+      {tier.particles && [0,1,2,3,4].map(i => (
+        <div key={i} style={{ position:"absolute", width:4, height:4, borderRadius:"50%", background:tier.rankColor, top:`${15+i*14}%`, left:i%2===0?`${5+i*3}%`:`${75+i*3}%`, animation:`sparkle ${1.5+i*0.4}s ease-in-out infinite`, animationDelay:`${i*0.3}s`, boxShadow:`0 0 6px ${tier.rankColor}` }} />
+      ))}
+      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={{ position:"relative", zIndex:2 }}>
+        {hasCape && <path d={`M ${cx-18} ${s*0.42} Q ${cx-30} ${s*0.75} ${cx-20} ${s*0.92} Q ${cx} ${s*0.96} ${cx+20} ${s*0.92} Q ${cx+30} ${s*0.75} ${cx+18} ${s*0.42}`} fill={tier.cloakColor} stroke={tier.rankColor} strokeWidth="0.8" opacity="0.9" />}
+        <rect x={cx-14} y={s*0.72} width={10} height={s*0.22} rx={3} fill={level>=6?"#1A0A1A":"#2A2A3A"} />
+        <rect x={cx+4}  y={s*0.72} width={10} height={s*0.22} rx={3} fill={level>=6?"#1A0A1A":"#2A2A3A"} />
+        <rect x={cx-16} y={s*0.88} width={14} height={s*0.08} rx={2} fill={level>=10?"#0A0A0A":"#3A2A1A"} />
+        <rect x={cx+2}  y={s*0.88} width={14} height={s*0.08} rx={2} fill={level>=10?"#0A0A0A":"#3A2A1A"} />
+        {level>=10 && <><line x1={cx-16} y1={s*0.9} x2={cx-2} y2={s*0.9} stroke={tier.rankColor} strokeWidth="1" opacity="0.6"/><line x1={cx+2} y1={s*0.9} x2={cx+16} y2={s*0.9} stroke={tier.rankColor} strokeWidth="1" opacity="0.6"/></>}
+        <rect x={cx-18} y={s*0.42} width={36} height={s*0.32} rx={6} fill={tier.cloakColor} />
+        {level>=3 && <rect x={cx-12} y={s*0.44} width={24} height={s*0.2} rx={4} fill={level>=10?"#1A0808":"#1A2A1A"} stroke={tier.rankColor} strokeWidth="0.5" opacity="0.8" />}
+        {level>=6 && <text x={cx} y={s*0.57} textAnchor="middle" fontSize={s*0.09} fill={tier.rankColor} opacity="0.9" fontWeight="bold">{level>=20?"卍":level>=15?"忍":level>=10?"闇":"忍"}</text>}
+        <rect x={cx-18} y={s*0.7} width={36} height={s*0.04} rx={2} fill={level>=6?tier.rankColor:"#4A3020"} opacity="0.8" />
+        <rect x={cx-28} y={s*0.43} width={10} height={s*0.26} rx={4} fill={tier.cloakColor} transform={`rotate(-8 ${cx-23} ${s*0.56})`} />
+        <rect x={cx+18} y={s*0.43} width={10} height={s*0.26} rx={4} fill={tier.cloakColor} transform={`rotate(8 ${cx+23} ${s*0.56})`} />
+        {level>=3 && <><line x1={cx-28} y1={s*0.55} x2={cx-18} y2={s*0.53} stroke={tier.rankColor} strokeWidth="1.5" opacity="0.5"/><line x1={cx+18} y1={s*0.53} x2={cx+28} y2={s*0.55} stroke={tier.rankColor} strokeWidth="1.5" opacity="0.5"/></>}
+        <rect x={cx-6} y={s*0.33} width={12} height={s*0.1} rx={3} fill={level>=6?"#2A1A1A":"#C8A882"} />
+        <ellipse cx={cx} cy={s*0.28} rx={s*0.145} ry={s*0.155} fill={level>=6?"#2A1A1A":"#D4A574"} />
+        {hasMask && <ellipse cx={cx} cy={s*0.29} rx={s*0.13} ry={s*0.1} fill={level>=15?"#1A0A00":"#0A0A1A"} stroke={tier.rankColor} strokeWidth="0.5" />}
+        {!hasMask && <><ellipse cx={cx-5} cy={s*0.27} rx={2.5} ry={2} fill="#1A0A0A"/><ellipse cx={cx+5} cy={s*0.27} rx={2.5} ry={2} fill="#1A0A0A"/><circle cx={cx-4.5} cy={s*0.27} r={0.8} fill="#fff"/><circle cx={cx+5.5} cy={s*0.27} r={0.8} fill="#fff"/></>}
+        {hasMask && <><ellipse cx={cx-5} cy={s*0.28} rx={2.5} ry={1.5} fill={tier.rankColor} opacity="0.9" style={{filter:`drop-shadow(0 0 3px ${tier.rankColor})`}}/><ellipse cx={cx+5} cy={s*0.28} rx={2.5} ry={1.5} fill={tier.rankColor} opacity="0.9" style={{filter:`drop-shadow(0 0 3px ${tier.rankColor})`}}/></>}
+        {!hasMask && !hasHelmet && <><ellipse cx={cx} cy={s*0.3} rx={1.2} ry={0.8} fill="#8B6A4A"/><path d={`M ${cx-3} ${s*0.325} Q ${cx} ${s*0.34} ${cx+3} ${s*0.325}`} stroke="#8B6A4A" strokeWidth="1" fill="none"/></>}
+        {hasScar && <line x1={cx-8} y1={s*0.24} x2={cx-3} y2={s*0.32} stroke={tier.rankColor} strokeWidth="1.2" opacity="0.6" />}
+        {!hasHelmet ? (
+          <><rect x={cx-s*0.145} y={s*0.2} width={s*0.29} height={s*0.06} rx={3} fill={tier.bandanaColor}/><rect x={cx-10} y={s*0.21} width={20} height={s*0.04} rx={2} fill={level>=6?"#3A3A4A":"#8B8B9A"} stroke={level>=3?tier.rankColor:"#666"} strokeWidth="0.5"/><text x={cx} y={s*0.245} textAnchor="middle" fontSize={s*0.065} fill={tier.rankColor} opacity="0.9">{level>=15?"神":level>=10?"闇":level>=6?"忍":"木"}</text><path d={`M ${cx+s*0.145} ${s*0.23} Q ${cx+s*0.19} ${s*0.28} ${cx+s*0.16} ${s*0.35}`} stroke={tier.bandanaColor} strokeWidth="3" fill="none" strokeLinecap="round"/></>
+        ) : (
+          <><ellipse cx={cx} cy={s*0.17} rx={s*0.22} ry={s*0.04} fill={tier.bandanaColor} stroke={tier.rankColor} strokeWidth="0.5"/><path d={`M ${cx-s*0.1} ${s*0.17} L ${cx} ${s*0.08} L ${cx+s*0.1} ${s*0.17}`} fill={tier.bandanaColor} stroke={tier.rankColor} strokeWidth="0.5"/><text x={cx} y={s*0.16} textAnchor="middle" fontSize={s*0.055} fill={tier.rankColor} opacity="0.9">影</text></>
+        )}
+        {!hasHelmet && !hasMask && <path d={`M ${cx-s*0.145} ${s*0.2} Q ${cx-s*0.18} ${s*0.13} ${cx} ${s*0.1} Q ${cx+s*0.18} ${s*0.13} ${cx+s*0.145} ${s*0.2}`} fill={level>=10?"#0A0A0A":level>=6?"#1A0A0A":"#2A1A0A"} />}
+        {level>=6 && !hasHelmet && <path d={`M ${cx-s*0.14} ${s*0.13} Q ${cx-s*0.2} ${s*0.06} ${cx-s*0.15} ${s*0.02}`} stroke={level>=15?tier.rankColor:"#1A0A0A"} strokeWidth="3" fill="none" strokeLinecap="round"/>}
+        {hasWeapon && (
+          <g style={{ animation:"weaponGlow 2s ease-in-out infinite" }}>
+            {level < 10 ? (
+              <g transform={`translate(${cx+24}, ${s*0.5}) rotate(30)`}>
+                <rect x={-2} y={-s*0.18} width={4} height={s*0.18} rx={1} fill={tier.weaponColor}/>
+                <polygon points={`0,${-s*0.22} -3,${-s*0.18} 3,${-s*0.18}`} fill={tier.weaponColor}/>
+                <rect x={-3} y={0} width={6} height={s*0.03} rx={1} fill="#4A3020"/>
+                <rect x={-1.5} y={s*0.03} width={3} height={s*0.06} rx={1} fill="#8B7355"/>
+              </g>
+            ) : level < 15 ? (
+              <g transform={`translate(${cx+20}, ${s*0.38}) rotate(35)`}>
+                <rect x={-1.5} y={-s*0.35} width={3} height={s*0.35} rx={1} fill={tier.weaponColor} style={{filter:`drop-shadow(0 0 4px ${tier.weaponColor})`}}/>
+                <ellipse cx={0} cy={0} rx={5} ry={3} fill="#3A2A1A"/>
+                <rect x={-2} y={0} width={4} height={s*0.1} rx={1} fill="#4A3020"/>
+                <polygon points={`0,${-s*0.37} -2,${-s*0.35} 2,${-s*0.35}`} fill="#E8E8E8"/>
+              </g>
+            ) : (
+              <>
+                <g transform={`translate(${cx+22}, ${s*0.36}) rotate(30)`}>
+                  <rect x={-2} y={-s*0.38} width={4} height={s*0.38} rx={1} fill={tier.weaponColor} style={{filter:`drop-shadow(0 0 6px ${tier.weaponColor})`}}/>
+                  <ellipse cx={0} cy={0} rx={6} ry={3} fill="#2A1A0A"/>
+                  <rect x={-2.5} y={0} width={5} height={s*0.1} rx={1} fill="#3A1A0A"/>
+                  <rect x={-1} y={-s*0.38} width={2} height={s*0.38} rx={1} fill="#fff" opacity="0.3"/>
+                </g>
+                {hasDual && (
+                  <g transform={`translate(${cx-24}, ${s*0.4}) rotate(-25)`}>
+                    <rect x={-1.5} y={-s*0.3} width={3} height={s*0.3} rx={1} fill={tier.weaponColor} opacity="0.85" style={{filter:`drop-shadow(0 0 4px ${tier.weaponColor})`}}/>
+                    <ellipse cx={0} cy={0} rx={5} ry={2.5} fill="#2A1A0A"/>
+                    <rect x={-2} y={0} width={4} height={s*0.08} rx={1} fill="#3A1A0A"/>
+                  </g>
+                )}
+              </>
+            )}
+          </g>
+        )}
+        {level >= 20 && (
+          <g style={{ transformOrigin:`${cx}px ${s*0.55}px`, animation:"spin 6s linear infinite" }}>
+            <ellipse cx={cx} cy={s*0.55} rx={s*0.42} ry={s*0.12} fill="none" stroke={tier.rankColor} strokeWidth="1.5" strokeDasharray="4 6" opacity="0.5"/>
+          </g>
+        )}
+      </svg>
+      <div style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", background:tier.rankColor, borderRadius:20, padding:"2px 12px", fontFamily:"'Bebas Neue', sans-serif", fontSize:11, letterSpacing:2, color:"#fff", whiteSpace:"nowrap", boxShadow:`0 0 10px ${tier.rankColor}88` }}>
+        {tier.name}
+      </div>
+    </div>
+  );
+}
+
+// ── STATIC DATA ───────────────────────────────────────────────────────────────
+const ARC_NAMES  = ["Origin Arc","Awakening Arc","Ascension Arc","Breakthrough Arc","Hero Arc"];
+const ARC_COLORS = ["#6B7280","#3B82F6","#8B5CF6","#F59E0B","#EF4444"];
+const ARC_RANKS  = ["E","D","C","B","A"];
+const ARC_DESCS  = [
+  "The body awakens. Every rep plants a seed.",
+  "Muscle memory stirs. The body remembers what it once was.",
+  "True growth begins. Others start to notice.",
+  "The wall breaks. Strength compounds. Form sharpens.",
+  "The peak approaches. Every rep forges the final form. This is what you trained for.",
+];
+
+function buildArcs(startW, goalW) {
+  const step = (goalW - startW) / 5;
+  return ARC_NAMES.map((name, i) => ({
+    name, color: ARC_COLORS[i], rank: ARC_RANKS[i], desc: ARC_DESCS[i],
+    range: [Math.round(startW + step * i), Math.round(startW + step * (i + 1))],
+  }));
+}
+
+const BASE_ATTRS = [
+  { key:"str", label:"STRENGTH",   icon:"⚔️", color:"#EF4444", tip:"Lift PRs" },
+  { key:"end", label:"ENDURANCE",  icon:"🔥", color:"#F59E0B", tip:"Consistency" },
+  { key:"vit", label:"VITALITY",   icon:"💚", color:"#10B981", tip:"Sleep + recovery" },
+  { key:"agi", label:"AGILITY",    icon:"⚡", color:"#3B82F6", tip:"Mobility" },
+  { key:"int", label:"DISCIPLINE", icon:"🧠", color:"#8B5CF6", tip:"Meals logged" },
+];
+
+const DAYS = [
+  { day:"MON", tag:"PUSH", icon:"🛡️", color:"#3B82F6", focus:"Chest + Shoulders",
+    exercises:["Incline DB Press 4x10–12","Flat DB Press 3x12","Cable Lateral Raises 4x15","Seated OHP 3x10","Cable Face Pulls 3x15","DB Front Raise 3x12"],
+    mobility:["Chest opener 2x30s","Shoulder circles 10x","Cat-cow 10x","Hip flexor 2x30s"] },
+  { day:"TUE", tag:"PULL", icon:"⚡", color:"#8B5CF6", focus:"Back + Biceps",
+    exercises:["Lat Pulldown wide 4x10–12","Seated Cable Row 4x12","DB Row 3x12ea","Assisted Pull-Ups 3x8–10","EZ Bar Curl 3x12","Hammer Curl 3x12"],
+    mobility:["Cat-cow 10x","Thread-needle 8ea","Lat stretch 2x30s","Piriformis 30s ea"] },
+  { day:"WED", tag:"LEGS ⚠️", icon:"🦵", color:"#EF4444", focus:"Legs — Knee Protocol", kneeWarning:true,
+    exercises:["Leg Press HIGH FEET 4x12 stop@90°","Romanian DL 4x12","Seated Leg Curl 3x15","Leg Extension PARTIAL 3x15","Hip Abductor 3x20","Glute Bridge 3x15","Calf Raise 4x15"],
+    mobility:["Knee hug 30s x2","Clamshells 15ea","TKE band 2x15 ← KEY","Ham stretch 30s ea"] },
+  { day:"THU", tag:"ARMS", icon:"💪", color:"#F59E0B", focus:"Arms + Core",
+    exercises:["Incline DB Curl 3x12","Cable Curl 3x15","OH Tri Extension 3x15","Tri Pushdown rope 3x15","Ab Wheel 3x10","Cable Woodchop 3x12ea","Hanging Knee Raise 3x12","Plank 3x45s"],
+    mobility:["Wrist circles 10x","OH tri stretch 30s","Dead bug 8ea","90/90 hip 30s ea"] },
+  { day:"FRI", tag:"FULL", icon:"🏃", color:"#10B981", focus:"Full Body + Mobility",
+    exercises:["Push-Up Variations 3x15ea","RDL 3x12","Goblet Squat SHALLOW 3x12","Cable Row wide 3x12","Arnold Press 3x10","Farmer Carry 3x40m"],
+    mobility:["World's greatest 5ea","Thoracic rotation 10ea","Hip flexor 30s ea","Ankle circles 10x"] },
+];
+
+const MEALS = [
+  { time:"7:00",  name:"Breakfast",   cal:600, pro:45, icon:"🌅", desc:"Overnight oats + 2 eggs + creatine" },
+  { time:"10:30", name:"Mid-Morning", cal:500, pro:52, icon:"⚡", desc:"2-scoop whey shake + whole milk + fruit" },
+  { time:"1:00",  name:"Lunch",       cal:800, pro:65, icon:"🍚", desc:"Prepped chicken/beef + rice + veggies" },
+  { time:"3:30",  name:"Pre-Workout", cal:420, pro:22, icon:"🏋️", desc:"Rice cakes + PB + string cheese x2" },
+  { time:"6:30",  name:"Dinner (GF)", cal:780, pro:58, icon:"🍽️", desc:"Cook together — plate 25–30% more", gf:true },
+  { time:"9:00",  name:"Night Gains", cal:280, pro:26, icon:"🌙", desc:"Cottage cheese + frozen mango + honey" },
+];
+
+const GROCERY = {
+  costco:    { label:"Costco",       color:"#E31837", badge:"Bi-weekly · Bulk", items:["Kirkland Chicken Breasts (6–7lb)","Ground Beef 93/7 (6lb)","Salmon Fillets (3lb)","Rotisserie Chickens x2","Kirkland Whey Protein (5lb)","Large Eggs (5 dozen)","Jasmine White Rice (25lb)","Old Fashioned Oats (10lb)","Pasta (8lb)","Greek Yogurt plain 2% (3lb)","Cottage Cheese 2% (3lb)","Whole Milk (2 gal)","Peanut Butter natural (2-pack)","Frozen Blueberries (5lb)","Frozen Broccoli (5lb)","Black Beans canned (8-pack)","Honey (5lb jug)","Olive Oil (2L)"] },
+  traderjoes:{ label:"Trader Joe's", color:"#C8232C", badge:"Weekly · Fresh",   items:["Just Chicken frozen strips","Organic Ground Turkey","String Cheese (12-pack)","Babybel Cheese (9-pack)","Beef Jerky","Rice Cakes","Açaí Packets (4-pack)","Whole Wheat Naan","Avocados (4-pack)","Broccoli + Asparagus","Cherry Tomatoes","Teriyaki Sauce","Sriracha","Frozen Sweet Potato Fries","EBTB Seasoning","Dark Chocolate Chips","Granola","Frozen Stir Fry Blend"] },
+  fredmeyer: { label:"Fred Meyer",   color:"#005DAA", badge:"Fill gaps + supps",items:["Pop Tarts (pre-workout)","Bagels (6-pack)","Gatorade variety pack","Chocolate Milk (½ gal)","Parmesan shredded","Cream Cheese","Nutella","Canned Tuna 12-pack","Creatine Monohydrate","Vitamin D3 5000 IU","Fish Oil Omega-3","Sesame Oil"] },
+};
+
+// ── LOCALSTORAGE ──────────────────────────────────────────────────────────────
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+// ── SETUP SCREEN ──────────────────────────────────────────────────────────────
+function SetupScreen({ onComplete }) {
+  const [step, setStep]       = useState(0);
+  const [name, setName]       = useState("");
+  const [age, setAge]         = useState("");
+  const [height, setHeight]   = useState("");
+  const [startW, setStartW]   = useState("");
+  const [goalW, setGoalW]     = useState("");
+
+  const steps = [
+    { label:"NINJA NAME", field: <input value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your name" style={iStyle} />, valid: name.trim().length > 0 },
+    { label:"YOUR AGE", field: <input type="number" value={age} onChange={e=>setAge(e.target.value)} placeholder="e.g. 27" style={iStyle} />, valid: age > 0 },
+    { label:"HEIGHT", field: <input value={height} onChange={e=>setHeight(e.target.value)} placeholder="e.g. 5ft 10in or 178cm" style={iStyle} />, valid: height.trim().length > 0 },
+    { label:"CURRENT WEIGHT (lbs)", field: <input type="number" value={startW} onChange={e=>setStartW(e.target.value)} placeholder="e.g. 135" style={iStyle} />, valid: startW > 0 },
+    { label:"GOAL WEIGHT (lbs)", field: <input type="number" value={goalW} onChange={e=>setGoalW(e.target.value)} placeholder="e.g. 160" style={iStyle} />, valid: goalW > 0 && parseFloat(goalW) > parseFloat(startW) },
+  ];
+
+  const current = steps[step];
+
+  function next() {
+    if (!current.valid) return;
+    if (step < steps.length - 1) { setStep(s => s + 1); return; }
+    const profile = { name: name.trim(), age: parseInt(age), height: height.trim(), startW: parseFloat(startW), goalW: parseFloat(goalW) };
+    save("shq_profile", profile);
+    onComplete(profile);
+  }
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#0A0208", display:"flex", alignItems:"center", justifyContent:"center", padding:24, fontFamily:"'Rajdhani', sans-serif" }}>
+      <style>{CSS}</style>
+      <div style={{ width:"100%", maxWidth:400, animation:"slideUp 0.4s ease" }}>
+        {/* Logo */}
+        <div style={{ textAlign:"center", marginBottom:40 }}>
+          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:42, color:"#FF6B00", letterSpacing:4, animation:"flicker 3s infinite" }}>TRAINING LOG</div>
+          <div style={{ fontSize:12, color:"#4A3020", letterSpacing:4, marginTop:4 }}>INITIALIZE YOUR CHARACTER</div>
+        </div>
+
+        {/* Step dots */}
+        <div style={{ display:"flex", gap:8, justifyContent:"center", marginBottom:32 }}>
+          {steps.map((_, i) => (
+            <div key={i} style={{ width: i === step ? 24 : 8, height:8, borderRadius:4, background: i <= step ? "#FF6B00" : "#1A0A02", transition:"all 0.3s", boxShadow: i === step ? "0 0 8px #FF6B0088" : "none" }} />
+          ))}
+        </div>
+
+        {/* Step card */}
+        <div style={{ background:"#0F0608", border:"1px solid #FF6B0033", borderRadius:16, padding:"28px 24px", animation:"glow 3s infinite" }}>
+          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:13, color:"#FF6B00", letterSpacing:4, marginBottom:16 }}>{current.label}</div>
+          {current.field}
+          <button onClick={next} disabled={!current.valid} style={{
+            width:"100%", marginTop:20, padding:"14px", background: current.valid ? "linear-gradient(135deg, #FF6B00, #CC5500)" : "#1A0A02",
+            border:"none", borderRadius:10, color: current.valid ? "#fff" : "#4A3020",
+            fontFamily:"'Bebas Neue', sans-serif", fontSize:18, letterSpacing:3,
+            cursor: current.valid ? "pointer" : "default",
+            boxShadow: current.valid ? "0 0 20px #FF6B0066" : "none",
+            transition:"all 0.2s"
+          }}>
+            {step < steps.length - 1 ? "NEXT →" : "BEGIN TRAINING ⚔️"}
+          </button>
+        </div>
+
+        {step > 0 && (
+          <button onClick={() => setStep(s => s - 1)} style={{ display:"block", margin:"16px auto 0", background:"transparent", border:"none", color:"#4A3020", fontSize:12, cursor:"pointer", letterSpacing:2, fontFamily:"'Bebas Neue', sans-serif" }}>← BACK</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const iStyle = { width:"100%", background:"#150A02", border:"1px solid #FF6B0044", borderRadius:10, padding:"14px 16px", color:"#F0E6D3", fontSize:18, fontWeight:700, fontFamily:"'Rajdhani', sans-serif", boxSizing:"border-box", outline:"none" };
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+export default function ShonenHQ() {
+  const [profile, setProfile]   = useState(() => load("shq_profile", null));
+  const [tab, setTab]           = useState("status");
+  const [fuelTab, setFuelTab]   = useState("meals");
+  const [trainDay, setTrainDay] = useState(0);
+  const [trainView, setTrainView] = useState("workout");
+  const [groceryStore, setGroceryStore] = useState("costco");
+
+  const [weight, setWeight]     = useState(() => load("shq_weight", profile?.startW || 135));
+  const [weightInput, setWeightInput] = useState(() => String(load("shq_weight", profile?.startW || 135)));
+  const [weightLog, setWeightLog] = useState(() => load("shq_weightLog", null));
+  const [attrs, setAttrs]       = useState(() => load("shq_attrs", { str:12, end:10, vit:11, agi:8, int:9 }));
+  const [xp, setXp]             = useState(() => load("shq_xp", 0));
+  const [level, setLevel]       = useState(() => load("shq_level", 1));
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpNum, setLevelUpNum]   = useState(1);
+  const [checkedEx, setCheckedEx]     = useState(() => load("shq_checkedEx", {}));
+  const [checkedMeals, setCheckedMeals] = useState(() => load("shq_checkedMeals", {}));
+  const [checkedGrocery, setCheckedGrocery] = useState(() => load("shq_checkedGrocery", {}));
+  const [calToday, setCalToday] = useState(() => load("shq_calToday", 0));
+  const [proToday, setProToday] = useState(() => load("shq_proToday", 0));
+  const [streak, setStreak]     = useState(() => load("shq_streak", 0));
+  const [notifs, setNotifs]     = useState([]);
+  const nid = useRef(0);
+
+  // Build arcs dynamically from profile
+  const startW = profile?.startW || 135;
+  const goalW  = profile?.goalW  || 160;
+  const ARCS   = buildArcs(startW, goalW);
+
+  // Init weight log from profile on first load
+  useEffect(() => {
+    if (profile && !load("shq_weightLog", null)) {
+      const log = [{ date:"Start", w: profile.startW }];
+      setWeightLog(log);
+      save("shq_weightLog", log);
+    } else if (!weightLog) {
+      setWeightLog([{ date:"Start", w: startW }]);
+    }
+  }, [profile]);
+
+  // Save all state
+  useEffect(() => { save("shq_weight", weight); }, [weight]);
+  useEffect(() => { if (weightLog) save("shq_weightLog", weightLog); }, [weightLog]);
+  useEffect(() => { save("shq_attrs", attrs); }, [attrs]);
+  useEffect(() => { save("shq_xp", xp); }, [xp]);
+  useEffect(() => { save("shq_level", level); }, [level]);
+  useEffect(() => { save("shq_checkedEx", checkedEx); }, [checkedEx]);
+  useEffect(() => { save("shq_checkedMeals", checkedMeals); }, [checkedMeals]);
+  useEffect(() => { save("shq_checkedGrocery", checkedGrocery); }, [checkedGrocery]);
+  useEffect(() => { save("shq_calToday", calToday); }, [calToday]);
+  useEffect(() => { save("shq_proToday", proToday); }, [proToday]);
+  useEffect(() => { save("shq_streak", streak); }, [streak]);
+
+  function getArc(w) {
+    for (const a of ARCS) if (w >= a.range[0] && w < a.range[1]) return a;
+    if (w >= goalW) return { ...ARCS[4], name:"LEGEND", desc:"Goal achieved. The journey never ends." };
+    return ARCS[0];
+  }
+  function arcPct(w) { const a = getArc(w); return Math.min(100, Math.max(0, ((w-a.range[0])/(a.range[1]-a.range[0]))*100)); }
+  function totalPct(w) { return Math.min(100, Math.max(0, ((w-startW)/(goalW-startW))*100)); }
+
+  const arc      = getArc(weight);
+  const xpToNext = level * 100;
+  const xpPct    = Math.min(100, (xp / xpToNext) * 100);
+  const day      = DAYS[trainDay];
+  const tier     = getNinjaTier(level);
+  const nextTier = NINJA_TIERS.find(t => t.minLevel > level);
+
+  useEffect(() => {
+    if (xp >= xpToNext) {
+      const nl = level + 1;
+      setLevel(nl); setXp(x => x - xpToNext);
+      setLevelUpNum(nl); setShowLevelUp(true);
+      setTimeout(() => setShowLevelUp(false), 3000);
+      pushNotif(`⬆️ LEVEL UP → ${getNinjaTier(nl).name}!`, "#F59E0B");
+    }
+  }, [xp]);
+
+  // Show setup screen if no profile — AFTER all hooks
+  if (!profile) return <SetupScreen onComplete={p => { setProfile(p); setWeight(p.startW); setWeightInput(String(p.startW)); setWeightLog([{date:"Start",w:p.startW}]); }} />;
+
+  function pushNotif(msg, color="#10B981") {
+    const id = nid.current++;
+    setNotifs(n => [...n, {id, msg, color}]);
+    setTimeout(() => setNotifs(n => n.filter(x => x.id !== id)), 2800);
+  }
+  function logWeight() {
+    const w = parseFloat(weightInput);
+    if (isNaN(w) || w < 50 || w > 500) return;
+    const gained = w - weight;
+    setWeight(w);
+    const today = new Date().toLocaleDateString("en-US", {month:"short", day:"numeric"});
+    setWeightLog(l => [...(l||[]).slice(-19), {date:today, w}]);
+    if (gained > 0) {
+      const earned = Math.round(gained * 40);
+      setXp(x => x + earned);
+      setAttrs(a => ({...a, vit:Math.min(99, a.vit+1)}));
+      pushNotif(`+${gained.toFixed(1)} lbs! +${earned} XP!`, "#10B981");
+    }
+  }
+  function boostAttr(key) {
+    setAttrs(a => ({...a, [key]:Math.min(99, a[key]+1)}));
+    setXp(x => x + 15);
+    pushNotif(`+1 ${BASE_ATTRS.find(b=>b.key===key)?.label}! +15 XP`, "#8B5CF6");
+  }
+  function toggleEx(i) {
+    const k = `${trainDay}-${i}`, was = checkedEx[k];
+    setCheckedEx(c => ({...c, [k]:!c[k]}));
+    if (!was) {
+      setXp(x => x+10);
+      setAttrs(a => ({...a, str:Math.min(99,a.str+0.5), end:Math.min(99,a.end+0.3)}));
+      const allDone = day.exercises.every((_,idx) => idx===i || checkedEx[`${trainDay}-${idx}`]);
+      if (allDone) { setStreak(s=>s+1); setXp(x=>x+50); pushNotif("🔥 FULL WORKOUT! +50 XP!", "#EF4444"); }
+      else pushNotif("+10 XP", "#3B82F6");
+    }
+  }
+  function toggleMeal(i) {
+    const was = checkedMeals[i];
+    setCheckedMeals(c => ({...c, [i]:!c[i]}));
+    if (!was) { setCalToday(c=>c+MEALS[i].cal); setProToday(p=>p+MEALS[i].pro); setXp(x=>x+8); setAttrs(a=>({...a,int:Math.min(99,a.int+0.4)})); pushNotif(`${MEALS[i].name} logged! +8 XP`,"#10B981"); }
+    else { setCalToday(c=>Math.max(0,c-MEALS[i].cal)); setProToday(p=>Math.max(0,p-MEALS[i].pro)); }
+  }
+
+  const NAV = [
+    {id:"status", label:"STATUS", icon:"⚔️"},
+    {id:"train",  label:"TRAIN",  icon:"🏋️"},
+    {id:"fuel",   label:"FUEL",   icon:"🍚"},
+    {id:"log",    label:"LOG",    icon:"📜"},
+  ];
+  const store = GROCERY[groceryStore];
+
+  return (
+    <div style={{ minHeight:"100vh", background:"#0A0208", color:"#F0E6D3", fontFamily:"'Rajdhani', sans-serif", paddingBottom:90, position:"relative", overflow:"hidden" }}>
+      <style>{CSS}</style>
+      <div style={{ position:"fixed", inset:0, backgroundImage:"radial-gradient(ellipse at 20% 20%, rgba(255,107,0,0.05) 0%, transparent 60%)", pointerEvents:"none" }} />
+      <div style={{ position:"fixed", inset:0, backgroundImage:"repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)", pointerEvents:"none", zIndex:1 }} />
+
+      {/* Notifications */}
+      <div style={{ position:"fixed", top:95, right:12, zIndex:100, display:"flex", flexDirection:"column", gap:6 }}>
+        {notifs.map(n => <div key={n.id} style={{ background:"#0A0208", border:`1px solid ${n.color}`, borderRadius:8, padding:"7px 12px", fontSize:12, fontWeight:700, color:n.color, animation:"popIn 0.3s ease", boxShadow:`0 0 12px ${n.color}44` }}>{n.msg}</div>)}
+      </div>
+
+      {/* Level up overlay */}
+      {showLevelUp && (
+        <div style={{ position:"fixed", inset:0, zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.85)", backdropFilter:"blur(6px)" }}>
+          <div style={{ textAlign:"center", animation:"popIn 0.4s ease" }}>
+            <div style={{ marginBottom:16 }}><NinjaAvatar level={levelUpNum} size={140}/></div>
+            <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:52, color:"#F59E0B", animation:"flicker 0.8s infinite", letterSpacing:4 }}>LEVEL UP</div>
+            <div style={{ fontSize:20, color:"#F0E6D3", letterSpacing:3, marginTop:4 }}>LVL {levelUpNum} — {getNinjaTier(levelUpNum).name}</div>
+            <div style={{ fontSize:13, color:"#8B7355", marginTop:8 }}>New power unlocked</div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ background:"linear-gradient(180deg, #150A02 0%, #0A0208 100%)", borderBottom:"1px solid #FF6B0022", padding:"14px 20px 0", position:"sticky", top:0, zIndex:10 }}>
+        <div style={{ maxWidth:520, margin:"0 auto" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+            <div>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, color:"#FF6B00", letterSpacing:3, lineHeight:1, animation:"flicker 3s infinite" }}>{profile.name.toUpperCase()}</div>
+              <div style={{ fontSize:10, color:"#6B4C2A", letterSpacing:2 }}>AGE {profile.age} · {profile.height} · {arc.name.toUpperCase()}</div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:arc.color, letterSpacing:2 }}>{weight} LBS</div>
+              <div style={{ fontSize:10, color:"#6B4C2A" }}>LVL {level} {tier.name} · {streak}🔥</div>
+            </div>
+          </div>
+          <div style={{ marginBottom:4 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+              <span style={{ fontSize:9, color:"#FF6B00", fontWeight:700, letterSpacing:2 }}>XP {xp}/{xpToNext}</span>
+              <span style={{ fontSize:9, color:"#4A3020" }}>NEXT → {nextTier?.name || "MAX"}</span>
+            </div>
+            <div style={{ height:5, background:"#1A0A02", borderRadius:3, overflow:"hidden" }}>
+              <div className="stat-bar" style={{ height:"100%", width:`${xpPct}%`, background:"linear-gradient(90deg, #FF6B00, #FFB347)", borderRadius:3, boxShadow:"0 0 6px #FF6B0066" }} />
+            </div>
+          </div>
+          <div style={{ display:"flex" }}>
+            {NAV.map(n => (
+              <button key={n.id} className="nav-btn" onClick={() => setTab(n.id)} style={{ flex:1, padding:"7px 4px 9px", border:"none", background:"transparent", borderBottom:`2px solid ${tab===n.id?"#FF6B00":"transparent"}`, color:tab===n.id?"#FF6B00":"#4A3020", fontSize:9, fontWeight:700, cursor:"pointer", letterSpacing:2, textTransform:"uppercase" }}>
+                <div style={{ fontSize:15, marginBottom:1 }}>{n.icon}</div>{n.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth:520, margin:"0 auto", padding:"18px 18px 0", position:"relative", zIndex:2 }}>
+
+        {/* ── STATUS ── */}
+        {tab === "status" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+
+            {/* Avatar */}
+            <div style={{ background:"#0F0608", border:`1px solid ${tier.rankColor}33`, borderRadius:16, padding:"20px 16px 28px", textAlign:"center", animation:"glow 3s infinite", position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", fontSize:120, color:tier.rankColor, opacity:0.03, top:"50%", left:"50%", transform:"translate(-50%,-50%)", fontFamily:"serif", pointerEvents:"none" }}>忍</div>
+              <div className="ninja-float"><NinjaAvatar level={level} size={160}/></div>
+              <div style={{ marginTop:10 }}>
+                <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:11, color:tier.rankColor, letterSpacing:3 }}>
+                  {nextTier ? `${nextTier.minLevel - level} LEVELS TO ${nextTier.name}` : "MAX RANK ACHIEVED"}
+                </div>
+              </div>
+            </div>
+
+            {/* Weight logger */}
+            <div style={{ background:"#0F0608", border:"1px solid #FF6B0033", borderRadius:14, padding:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:16, color:"#FF6B00", letterSpacing:3, marginBottom:10 }}>LOG BODY WEIGHT</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <input type="number" value={weightInput} onChange={e=>setWeightInput(e.target.value)}
+                  style={{ flex:1, background:"#150A02", border:"1px solid #FF6B0044", borderRadius:8, padding:"10px 12px", color:"#F0E6D3", fontSize:18, fontWeight:700, fontFamily:"'Rajdhani', sans-serif" }} placeholder="lbs"
+                />
+                <button className="log-btn" onClick={logWeight} style={{ background:"linear-gradient(135deg, #FF6B00, #CC5500)", border:"none", borderRadius:8, padding:"10px 18px", color:"#fff", fontFamily:"'Bebas Neue', sans-serif", fontSize:15, letterSpacing:2, cursor:"pointer", boxShadow:"0 0 14px #FF6B0066" }}>LOG IT</button>
+              </div>
+            </div>
+
+            {/* Progress */}
+            <div style={{ background:"#0F0608", border:`1px solid ${arc.color}33`, borderRadius:14, padding:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:14, color:arc.color, letterSpacing:3, marginBottom:10 }}>MISSION PROGRESS</div>
+              <div style={{ marginBottom:10 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#6B4C2A", marginBottom:3 }}>
+                  <span>TOTAL · {startW}→{goalW} lbs</span><span>{totalPct(weight).toFixed(1)}%</span>
+                </div>
+                <div style={{ height:8, background:"#1A0A02", borderRadius:4, overflow:"hidden" }}>
+                  <div className="stat-bar" style={{ height:"100%", width:`${totalPct(weight)}%`, background:`linear-gradient(90deg, #6B728088, ${arc.color})`, borderRadius:4, boxShadow:`0 0 8px ${arc.color}66` }} />
+                </div>
+              </div>
+              <div>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:"#6B4C2A", marginBottom:3 }}>
+                  <span>ARC · {arc.name}</span><span>{arcPct(weight).toFixed(1)}%</span>
+                </div>
+                <div style={{ height:6, background:"#1A0A02", borderRadius:3, overflow:"hidden" }}>
+                  <div className="stat-bar" style={{ height:"100%", width:`${arcPct(weight)}%`, background:arc.color, borderRadius:3, boxShadow:`0 0 6px ${arc.color}` }} />
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:6, marginTop:10, overflowX:"auto" }}>
+                {ARCS.map((a,i) => (
+                  <div key={i} style={{ flexShrink:0, textAlign:"center", opacity:weight>=a.range[0]?1:0.25 }}>
+                    <div style={{ width:28, height:28, borderRadius:"50%", border:`2px solid ${a.color}`, background:weight>=a.range[1]?`${a.color}33`:"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:11, color:a.color }}>{a.rank}</span>
+                    </div>
+                    <div style={{ fontSize:7, color:"#6B4C2A", marginTop:2 }}>{a.range[0]}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Attributes */}
+            <div style={{ background:"#0F0608", border:"1px solid #1A0A02", borderRadius:14, padding:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:16, color:"#FF6B00", letterSpacing:3, marginBottom:12 }}>CHARACTER STATS</div>
+              {BASE_ATTRS.map(attr => (
+                <div key={attr.key} style={{ marginBottom:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
+                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                      <span>{attr.icon}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:attr.color, letterSpacing:2 }}>{attr.label}</span>
+                      <span style={{ fontSize:9, color:"#4A3020" }}>{attr.tip}</span>
+                    </div>
+                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                      <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:17, color:attr.color }}>{Math.floor(attrs[attr.key])}</span>
+                      <button onClick={()=>boostAttr(attr.key)} style={{ background:`${attr.color}22`, border:`1px solid ${attr.color}44`, borderRadius:4, padding:"1px 7px", color:attr.color, fontSize:11, fontWeight:700, cursor:"pointer" }}>+</button>
+                    </div>
+                  </div>
+                  <div style={{ height:4, background:"#1A0A02", borderRadius:2, overflow:"hidden" }}>
+                    <div className="stat-bar" style={{ height:"100%", width:`${Math.min(100,attrs[attr.key])}%`, background:`linear-gradient(90deg, ${attr.color}55, ${attr.color})`, borderRadius:2 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Knee */}
+            <div style={{ background:"#0F0608", border:"1px solid #EF444433", borderRadius:12, padding:"12px 14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:13, color:"#EF4444", letterSpacing:3, marginBottom:5 }}>⚠️ INJURY STATUS</div>
+              <div style={{ fontSize:12, color:"#8B7355", lineHeight:1.6 }}>No deep squats Wks 1–4. Goblet: 60°→70°→90° progressive. TKEs every leg day. Ice 10 min post leg day.</div>
+            </div>
+
+            {/* Reset */}
+            <button onClick={() => { if(window.confirm("Reset all progress and start over?")) { localStorage.clear(); window.location.reload(); } }} style={{ background:"transparent", border:"1px solid #2A1A0A", borderRadius:8, padding:"8px", color:"#4A3020", fontSize:11, cursor:"pointer", fontFamily:"'Bebas Neue', sans-serif", letterSpacing:2, width:"100%" }}>
+              RESET PROFILE
+            </button>
+          </div>
+        )}
+
+        {/* ── TRAIN ── */}
+        {tab === "train" && (
+          <div>
+            <div style={{ display:"flex", gap:6, marginBottom:12, overflowX:"auto", paddingBottom:4 }}>
+              {DAYS.map((d,i) => (
+                <button key={i} onClick={()=>{setTrainDay(i);setTrainView("workout");}} style={{ flexShrink:0, padding:"7px 12px", borderRadius:8, border:"1px solid", borderColor:trainDay===i?d.color:"#1A0A02", background:trainDay===i?`${d.color}18`:"#0F0608", color:trainDay===i?d.color:"#4A3020", fontFamily:"'Bebas Neue', sans-serif", fontSize:13, letterSpacing:2, cursor:"pointer" }}>{d.day}</button>
+              ))}
+            </div>
+            <div style={{ background:`linear-gradient(135deg, ${day.color}20, ${day.color}05)`, border:`1px solid ${day.color}44`, borderRadius:14, padding:"14px 16px", marginBottom:12 }}>
+              <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:6 }}>
+                <span style={{ fontSize:26 }}>{day.icon}</span>
+                <div>
+                  <div style={{ background:day.color, color:"#fff", borderRadius:4, padding:"2px 8px", display:"inline-block", fontFamily:"'Bebas Neue', sans-serif", fontSize:12, letterSpacing:2 }}>{day.tag}</div>
+                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:"#F0E6D3", letterSpacing:1, marginTop:2 }}>{day.focus}</div>
+                </div>
+              </div>
+              {day.kneeWarning && <div style={{ background:"#EF444415", border:"1px solid #EF444430", borderRadius:8, padding:"7px 10px", fontSize:11, color:"#FCA5A5" }}>⚠️ MENISCUS: High foot on press. Stop at 90°. No jumping.</div>}
+              {(()=>{
+                const done = day.exercises.filter((_,i)=>checkedEx[`${trainDay}-${i}`]).length;
+                return <div style={{ marginTop:10 }}><div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:day.color, marginBottom:3 }}><span>SESSION</span><span>{done}/{day.exercises.length}</span></div><div style={{ height:4, background:"#1A0A02", borderRadius:2, overflow:"hidden" }}><div className="stat-bar" style={{ height:"100%", width:`${(done/day.exercises.length)*100}%`, background:day.color, borderRadius:2, boxShadow:`0 0 6px ${day.color}` }}/></div></div>;
+              })()}
+            </div>
+            <div style={{ display:"flex", gap:4, background:"#0F0608", borderRadius:10, padding:4, border:"1px solid #1A0A02", marginBottom:12 }}>
+              {["workout","mobility"].map(t => <button key={t} onClick={()=>setTrainView(t)} style={{ flex:1, padding:"7px", borderRadius:7, border:"none", background:trainView===t?day.color:"transparent", color:trainView===t?"#fff":"#4A3020", fontFamily:"'Bebas Neue', sans-serif", fontSize:12, letterSpacing:2, cursor:"pointer" }}>{t==="workout"?"⚔️ EXERCISES":"🔥 WARM-UP"}</button>)}
+            </div>
+            {trainView === "workout" && (
+              <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+                {day.exercises.map((ex,i) => {
+                  const done = checkedEx[`${trainDay}-${i}`];
+                  const [name, sets] = ex.includes(" — ") ? ex.split(" — ") : [ex, ""];
+                  return (
+                    <div key={i} onClick={()=>toggleEx(i)} style={{ background:done?`${day.color}14`:"#0F0608", border:`1px solid ${done?day.color+"55":"#1A0A02"}`, borderRadius:10, padding:"11px 14px", display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
+                      <div style={{ width:22, height:22, borderRadius:6, border:`2px solid ${done?day.color:"#2A1A0A"}`, background:done?day.color:"transparent", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>{done && <span style={{ color:"#fff", fontSize:11 }}>✓</span>}</div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:done?day.color:"#F0E6D3", textDecoration:done?"line-through":"none" }}>{name}</div>
+                        {sets && <div style={{ fontSize:10, color:done?day.color+"77":"#4A3020", letterSpacing:1 }}>{sets}</div>}
+                      </div>
+                      {!done && <span style={{ fontSize:10, color:"#4A3020" }}>+10XP</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {trainView === "mobility" && (
+              <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+                <div style={{ fontSize:10, color:"#6B4C2A", letterSpacing:2, marginBottom:4 }}>10 MIN — DO NOT SKIP</div>
+                {day.mobility.map((m,i) => <div key={i} style={{ background:"#0F0608", border:"1px solid #1A0A02", borderRadius:10, padding:"10px 14px", fontSize:13, color:"#8B7355", display:"flex", gap:8 }}><span style={{ color:"#FF6B00" }}>▸</span> {m}</div>)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── FUEL ── */}
+        {tab === "fuel" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ display:"flex", gap:4, background:"#0F0608", borderRadius:10, padding:4, border:"1px solid #1A0A02" }}>
+              {[{id:"meals",label:"🍚 MEALS"},{id:"grocery",label:"🛒 GROCERY"}].map(t => <button key={t.id} onClick={()=>setFuelTab(t.id)} style={{ flex:1, padding:"8px", borderRadius:7, border:"none", background:fuelTab===t.id?"#FF6B00":"transparent", color:fuelTab===t.id?"#fff":"#4A3020", fontFamily:"'Bebas Neue', sans-serif", fontSize:13, letterSpacing:2, cursor:"pointer" }}>{t.label}</button>)}
+            </div>
+
+            {fuelTab === "meals" && (
+              <>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  {[{label:"CALORIES",val:calToday,target:3400,color:"#FF6B00",unit:"kcal"},{label:"PROTEIN",val:proToday,target:220,color:"#3B82F6",unit:"g"}].map(s => (
+                    <div key={s.label} style={{ background:"#0F0608", border:`1px solid ${s.color}22`, borderRadius:12, padding:"12px" }}>
+                      <div style={{ fontSize:9, letterSpacing:3, color:s.color, marginBottom:3 }}>{s.label}</div>
+                      <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:26, color:s.color }}>{s.val}<span style={{ fontSize:11 }}>{s.unit}</span></div>
+                      <div style={{ height:4, background:"#1A0A02", borderRadius:2, marginTop:5, overflow:"hidden" }}><div className="stat-bar" style={{ height:"100%", width:`${Math.min(100,(s.val/s.target)*100)}%`, background:s.color, borderRadius:2 }}/></div>
+                      <div style={{ fontSize:9, color:"#4A3020", marginTop:2 }}>/ {s.target}{s.unit}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+                  {MEALS.map((m,i) => {
+                    const done = checkedMeals[i];
+                    return (
+                      <div key={i} onClick={()=>toggleMeal(i)} style={{ background:done?"#0A1A0A":"#0F0608", border:`1px solid ${done?"#10B98133":"#1A0A02"}`, borderRadius:10, padding:"11px 14px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer" }}>
+                        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                          <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${done?"#10B981":"#2A1A0A"}`, background:done?"#10B981":"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{done && <span style={{ color:"#fff", fontSize:10 }}>✓</span>}</div>
+                          <div>
+                            <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+                              <span style={{ fontSize:15 }}>{m.icon}</span>
+                              <span style={{ fontSize:13, fontWeight:700, color:done?"#10B981":"#F0E6D3", textDecoration:done?"line-through":"none" }}>{m.name}</span>
+                              {m.gf && <span style={{ fontSize:10, color:"#F59E0B" }}>💛</span>}
+                            </div>
+                            <div style={{ fontSize:10, color:"#4A3020", marginTop:1 }}>{m.time} · {m.pro}g pro · {m.desc}</div>
+                          </div>
+                        </div>
+                        <div style={{ textAlign:"right", flexShrink:0 }}>
+                          <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:17, color:done?"#10B981":"#FF6B00" }}>{m.cal}</div>
+                          <div style={{ fontSize:9, color:"#4A3020" }}>cal</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ background:"#0F0608", border:"1px solid #F59E0B22", borderRadius:10, padding:"10px 14px", fontSize:11, color:"#8B7355" }}>
+                  💛 <strong style={{ color:"#F59E0B" }}>GF Dinner:</strong> Same meal — plate 25–30% more for yourself. Hit 2,500 cal before dinner.
+                </div>
+              </>
+            )}
+
+            {fuelTab === "grocery" && (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                <div style={{ background:"#0F0608", border:"1px solid #FF6B0022", borderRadius:10, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ fontSize:10, color:"#6B4C2A", letterSpacing:2 }}>WEEKLY BUDGET</div>
+                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:"#FF6B00" }}>$150–195</div>
+                </div>
+                <div style={{ display:"flex", gap:4 }}>
+                  {Object.entries(GROCERY).map(([key,s]) => <button key={key} onClick={()=>setGroceryStore(key)} style={{ flex:1, padding:"7px 4px", borderRadius:8, border:`1px solid ${groceryStore===key?s.color:"#1A0A02"}`, background:groceryStore===key?`${s.color}18`:"#0F0608", color:groceryStore===key?s.color:"#4A3020", fontFamily:"'Bebas Neue', sans-serif", fontSize:9, letterSpacing:1, cursor:"pointer", lineHeight:1.3 }}>{s.label.split(" ")[0]}<br/>{s.label.split(" ")[1]||""}</button>)}
+                </div>
+                <div style={{ background:store.color, borderRadius:10, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div><div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:16, color:"#fff" }}>{store.label}</div><div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:1 }}>{store.badge}</div></div>
+                  <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:20, color:"#fff" }}>{store.items.filter((_,i)=>checkedGrocery[`${groceryStore}-${i}`]).length}/{store.items.length}</div>
+                </div>
+                <div style={{ height:3, background:"#1A0A02", borderRadius:2, overflow:"hidden", marginTop:-8 }}>
+                  <div className="stat-bar" style={{ height:"100%", width:`${(store.items.filter((_,i)=>checkedGrocery[`${groceryStore}-${i}`]).length/store.items.length)*100}%`, background:store.color, borderRadius:2 }}/>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+                  {store.items.map((item,i) => {
+                    const k=`${groceryStore}-${i}`, done=!!checkedGrocery[k];
+                    return <div key={i} onClick={()=>setCheckedGrocery(c=>({...c,[k]:!c[k]}))} style={{ display:"flex", gap:10, alignItems:"center", padding:"9px 12px", background:done?"#0A120A":"#0F0608", border:`1px solid ${done?store.color+"33":"#1A0A02"}`, borderRadius:8, cursor:"pointer" }}>
+                      <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${done?store.color:"#2A1A0A"}`, background:done?store.color:"transparent", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>{done && <svg width="9" height="7" viewBox="0 0 12 9" fill="none"><path d="M1 4L4.5 7.5L11 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}</div>
+                      <span style={{ fontSize:12, color:done?"#4A3020":"#C0A882", textDecoration:done?"line-through":"none" }}>{item}</span>
+                    </div>;
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── LOG ── */}
+        {tab === "log" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ background:"#0F0608", border:"1px solid #1A0A02", borderRadius:14, padding:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:16, color:"#FF6B00", letterSpacing:3, marginBottom:10 }}>WEIGHT HISTORY</div>
+              {!weightLog || weightLog.length <= 1 ? (
+                <div style={{ fontSize:12, color:"#4A3020", textAlign:"center", padding:"20px 0" }}>Log weight daily to build your chart</div>
+              ) : (
+                <div style={{ display:"flex", alignItems:"flex-end", gap:3, height:80, marginBottom:8 }}>
+                  {weightLog.slice(-12).map((e,i,arr) => {
+                    const min=Math.min(...arr.map(x=>x.w)), max=Math.max(...arr.map(x=>x.w))||min+1;
+                    const h=((e.w-min)/(max-min||1))*60+10, isLast=i===arr.length-1;
+                    return <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
+                      {isLast && <div style={{ fontSize:7, color:"#FF6B00" }}>{e.w}</div>}
+                      <div style={{ width:"100%", height:h, background:isLast?"#FF6B00":"#2A1A0A", borderRadius:"2px 2px 0 0", boxShadow:isLast?"0 0 6px #FF6B0066":"none" }}/>
+                      <div style={{ fontSize:6, color:"#4A3020", textAlign:"center" }}>{e.date}</div>
+                    </div>;
+                  })}
+                </div>
+              )}
+              <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:160, overflowY:"auto" }}>
+                {[...(weightLog||[])].reverse().map((e,i) => (
+                  <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 10px", background:i===0?"#1A0A02":"transparent", borderRadius:6, border:i===0?"1px solid #FF6B0022":"none" }}>
+                    <span style={{ fontSize:11, color:"#8B7355" }}>{e.date}</span>
+                    <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:14, color:i===0?"#FF6B00":"#4A3020" }}>{e.w} LBS</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Arc milestones */}
+            <div style={{ background:"#0F0608", border:"1px solid #1A0A02", borderRadius:14, padding:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:16, color:"#FF6B00", letterSpacing:3, marginBottom:10 }}>ARC MILESTONES</div>
+              {ARCS.map((a,i) => {
+                const unlocked=weight>=a.range[0], complete=weight>=a.range[1];
+                return <div key={i} style={{ display:"flex", gap:10, marginBottom:9, alignItems:"center", opacity:unlocked?1:0.25 }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", border:`2px solid ${a.color}`, background:complete?`${a.color}33`:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <span style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:14, color:a.color }}>{a.rank}</span>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between" }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:a.color }}>{a.name}</span>
+                      <span style={{ fontSize:10, color:"#4A3020" }}>{a.range[0]}–{a.range[1]}</span>
+                    </div>
+                    <div style={{ fontSize:10, color:"#6B4C2A" }}>{a.desc}</div>
+                  </div>
+                  {complete && <span style={{ color:"#10B981" }}>✓</span>}
+                </div>;
+              })}
+            </div>
+
+            {/* Ninja rank ladder */}
+            <div style={{ background:"#0F0608", border:"1px solid #1A0A02", borderRadius:14, padding:"14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue', sans-serif", fontSize:16, color:"#FF6B00", letterSpacing:3, marginBottom:10 }}>NINJA RANK LADDER</div>
+              {NINJA_TIERS.map((t,i) => {
+                const unlocked = level >= t.minLevel;
+                return <div key={i} style={{ display:"flex", gap:10, marginBottom:9, alignItems:"center", opacity:unlocked?1:0.25 }}>
+                  <div style={{ width:32, height:32, borderRadius:"50%", border:`2px solid ${t.rankColor}`, background:unlocked?`${t.rankColor}22`:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:unlocked?`0 0 8px ${t.rankColor}44`:"none" }}>
+                    <span style={{ fontSize:10, fontWeight:900, color:t.rankColor }}>Lv{t.minLevel}</span>
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <span style={{ fontSize:14, fontWeight:800, color:t.rankColor, fontFamily:"'Bebas Neue', sans-serif", letterSpacing:2 }}>{t.name}</span>
+                    <div style={{ fontSize:10, color:"#4A3020" }}>{["Kunai · Basic wrap · Green headband","Blue vest armor · Metal plate headband","Purple cloak · Dual arm wraps · Katana","Black ANBU mask · Glowing eyes · Dual blades","Kage hat · Golden blade · Battle aura","Orbiting ring · Legend weapon · Flame aura"][i]}</div>
+                  </div>
+                  {unlocked && tier.name===t.name && <span style={{ fontSize:10, color:t.rankColor, fontWeight:700 }}>← NOW</span>}
+                </div>;
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
