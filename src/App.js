@@ -874,7 +874,7 @@ export default function ShonenHQ() {
                   <div style={{ width:32, height:32, borderRadius:"50%", border:`2px solid ${t.rankColor}`, background:unlocked?`${t.rankColor}18`:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:unlocked?`0 0 6px ${t.rankColor}33`:"none" }}><span style={{ fontSize:9, fontWeight:900, color:t.rankColor }}>Lv{t.minLevel}</span></div>
                   <div style={{ flex:1 }}>
                     <span style={{ fontSize:14, fontWeight:800, color:t.rankColor, fontFamily:"'Bebas Neue',sans-serif", letterSpacing:2 }}>{t.name}</span>
-                    <div style={{ fontSize:10, color:"#4A3020" }}>{["Full black ninja suit, mask on":"","+ Kunai weapon, blue trim","+ Rank scarf, Jonin suit navy","+ Katana, ANBU suit, bright eyes","+ Dual blades, Kage hat, crimson suit","+ Legendary weapon, orbit ring, max aura"][i]}</div>
+                    <div style={{ fontSize:10, color:"#4A3020" }}>{["Full black ninja suit, mask on","+ Kunai weapon, blue trim","+ Rank scarf, Jonin suit navy","+ Katana, ANBU suit, bright eyes","+ Dual blades, Kage hat, crimson suit","+ Legendary weapon, orbit ring, max aura"][i]}</div>
                   </div>
                   {unlocked&&tier.name===t.name&&<span style={{ fontSize:10, color:t.rankColor, fontWeight:700 }}>NOW</span>}
                 </div>;
