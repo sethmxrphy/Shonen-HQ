@@ -39,51 +39,267 @@ function getNinjaTier(lvl) {
 // ── NINJA AVATAR ──────────────────────────────────────────────────────────────
 function NinjaAvatar({ level, size = 160 }) {
   const tier = getNinjaTier(level);
-  const s = size, cx = s / 2;
-  const hasWeapon = level >= 3, hasDual = level >= 10, hasCape = level >= 6;
-  const hasHelmet = level >= 15, hasMask = level >= 10, hasAura = level >= 3, hasScar = level >= 6;
+  const s = size, cx = s / 2, cy = s / 2;
+  const hasCape = level >= 6, hasMask = level >= 10;
+  const hasHelmet = level >= 15, hasAura = level >= 3;
+  const hasDual = level >= 10, hasScar = level >= 6;
+
+  // Skin tone — masked at level 10+
+  const skinColor = hasMask ? tier.cloakColor : "#C8956C";
+  const hairColor = level >= 10 ? "#0A0A0A" : level >= 6 ? "#1A0A0A" : "#2A1A0A";
+
   return (
     <div style={{ position:"relative", width:s, height:s, margin:"0 auto" }}>
-      {level >= 15 && <div style={{ position:"absolute", inset:-10, borderRadius:"50%", border:`2px solid ${tier.rankColor}`, animation:"legendAura 2s ease-in-out infinite", opacity:0.5 }} />}
-      {level >= 20 && <div style={{ position:"absolute", inset:-20, borderRadius:"50%", border:`1px solid ${tier.rankColor}`, animation:"legendAura 3s ease-in-out infinite reverse", opacity:0.3 }} />}
-      {hasAura && <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:`radial-gradient(ellipse at center, ${tier.aura} 0%, transparent 70%)`, animation:"auraFloat 2.5s ease-in-out infinite" }} />}
+      {/* Aura rings */}
+      {level >= 15 && <div style={{ position:"absolute", inset:-10, borderRadius:"50%", border:`1.5px solid ${tier.rankColor}`, animation:"legendAura 2s ease-in-out infinite", opacity:0.45 }}/>}
+      {level >= 20 && <div style={{ position:"absolute", inset:-22, borderRadius:"50%", border:`1px solid ${tier.rankColor}`, animation:"legendAura 3s ease-in-out infinite reverse", opacity:0.25 }}/>}
+      {hasAura && <div style={{ position:"absolute", inset:0, borderRadius:"50%", background:`radial-gradient(ellipse at 50% 60%, ${tier.aura} 0%, transparent 68%)`, animation:"auraFloat 2.8s ease-in-out infinite" }}/>}
       {tier.particles && [0,1,2,3,4].map(i => (
-        <div key={i} style={{ position:"absolute", width:4, height:4, borderRadius:"50%", background:tier.rankColor, top:`${15+i*14}%`, left:i%2===0?`${5+i*3}%`:`${75+i*3}%`, animation:`sparkle ${1.5+i*0.4}s ease-in-out infinite`, animationDelay:`${i*0.3}s`, boxShadow:`0 0 6px ${tier.rankColor}` }} />
+        <div key={i} style={{ position:"absolute", width:3, height:3, borderRadius:"50%", background:tier.rankColor, top:`${18+i*13}%`, left:i%2===0?`${4+i*2}%`:`${76+i*2}%`, animation:`sparkle ${1.6+i*0.35}s ease-in-out infinite`, animationDelay:`${i*0.28}s`, boxShadow:`0 0 5px ${tier.rankColor}` }}/>
       ))}
+
       <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={{ position:"relative", zIndex:2 }}>
-        {hasCape && <path d={`M ${cx-18} ${s*0.42} Q ${cx-30} ${s*0.75} ${cx-20} ${s*0.92} Q ${cx} ${s*0.96} ${cx+20} ${s*0.92} Q ${cx+30} ${s*0.75} ${cx+18} ${s*0.42}`} fill={tier.cloakColor} stroke={tier.rankColor} strokeWidth="0.8" opacity="0.9"/>}
-        <rect x={cx-14} y={s*0.72} width={10} height={s*0.22} rx={3} fill={level>=6?"#1A0A1A":"#2A2A3A"}/>
-        <rect x={cx+4}  y={s*0.72} width={10} height={s*0.22} rx={3} fill={level>=6?"#1A0A1A":"#2A2A3A"}/>
-        <rect x={cx-16} y={s*0.88} width={14} height={s*0.08} rx={2} fill={level>=10?"#0A0A0A":"#3A2A1A"}/>
-        <rect x={cx+2}  y={s*0.88} width={14} height={s*0.08} rx={2} fill={level>=10?"#0A0A0A":"#3A2A1A"}/>
-        {level>=10&&<><line x1={cx-16} y1={s*0.9} x2={cx-2} y2={s*0.9} stroke={tier.rankColor} strokeWidth="1" opacity="0.6"/><line x1={cx+2} y1={s*0.9} x2={cx+16} y2={s*0.9} stroke={tier.rankColor} strokeWidth="1" opacity="0.6"/></>}
-        <rect x={cx-18} y={s*0.42} width={36} height={s*0.32} rx={6} fill={tier.cloakColor}/>
-        {level>=3&&<rect x={cx-12} y={s*0.44} width={24} height={s*0.2} rx={4} fill={level>=10?"#1A0808":"#1A2A1A"} stroke={tier.rankColor} strokeWidth="0.5" opacity="0.8"/>}
-        {level>=6&&<text x={cx} y={s*0.57} textAnchor="middle" fontSize={s*0.09} fill={tier.rankColor} opacity="0.9" fontWeight="bold">{level>=20?"卍":level>=15?"忍":level>=10?"闇":"忍"}</text>}
-        <rect x={cx-18} y={s*0.7} width={36} height={s*0.04} rx={2} fill={level>=6?tier.rankColor:"#4A3020"} opacity="0.8"/>
-        <rect x={cx-28} y={s*0.43} width={10} height={s*0.26} rx={4} fill={tier.cloakColor} transform={`rotate(-8 ${cx-23} ${s*0.56})`}/>
-        <rect x={cx+18} y={s*0.43} width={10} height={s*0.26} rx={4} fill={tier.cloakColor} transform={`rotate(8 ${cx+23} ${s*0.56})`}/>
-        {level>=3&&<><line x1={cx-28} y1={s*0.55} x2={cx-18} y2={s*0.53} stroke={tier.rankColor} strokeWidth="1.5" opacity="0.5"/><line x1={cx+18} y1={s*0.53} x2={cx+28} y2={s*0.55} stroke={tier.rankColor} strokeWidth="1.5" opacity="0.5"/></>}
-        <rect x={cx-6} y={s*0.33} width={12} height={s*0.1} rx={3} fill={level>=6?"#2A1A1A":"#C8A882"}/>
-        <ellipse cx={cx} cy={s*0.28} rx={s*0.145} ry={s*0.155} fill={level>=6?"#2A1A1A":"#D4A574"}/>
-        {hasMask&&<ellipse cx={cx} cy={s*0.29} rx={s*0.13} ry={s*0.1} fill={level>=15?"#1A0A00":"#0A0A1A"} stroke={tier.rankColor} strokeWidth="0.5"/>}
-        {!hasMask&&<><ellipse cx={cx-5} cy={s*0.27} rx={2.5} ry={2} fill="#1A0A0A"/><ellipse cx={cx+5} cy={s*0.27} rx={2.5} ry={2} fill="#1A0A0A"/><circle cx={cx-4.5} cy={s*0.27} r={0.8} fill="#fff"/><circle cx={cx+5.5} cy={s*0.27} r={0.8} fill="#fff"/></>}
-        {hasMask&&<><ellipse cx={cx-5} cy={s*0.28} rx={2.5} ry={1.5} fill={tier.rankColor} opacity="0.9" style={{filter:`drop-shadow(0 0 3px ${tier.rankColor})`}}/><ellipse cx={cx+5} cy={s*0.28} rx={2.5} ry={1.5} fill={tier.rankColor} opacity="0.9" style={{filter:`drop-shadow(0 0 3px ${tier.rankColor})`}}/></>}
-        {!hasMask&&!hasHelmet&&<><ellipse cx={cx} cy={s*0.3} rx={1.2} ry={0.8} fill="#8B6A4A"/><path d={`M ${cx-3} ${s*0.325} Q ${cx} ${s*0.34} ${cx+3} ${s*0.325}`} stroke="#8B6A4A" strokeWidth="1" fill="none"/></>}
-        {hasScar&&<line x1={cx-8} y1={s*0.24} x2={cx-3} y2={s*0.32} stroke={tier.rankColor} strokeWidth="1.2" opacity="0.6"/>}
-        {!hasHelmet?(<><rect x={cx-s*0.145} y={s*0.2} width={s*0.29} height={s*0.06} rx={3} fill={tier.bandanaColor}/><rect x={cx-10} y={s*0.21} width={20} height={s*0.04} rx={2} fill={level>=6?"#3A3A4A":"#8B8B9A"} stroke={level>=3?tier.rankColor:"#666"} strokeWidth="0.5"/><text x={cx} y={s*0.245} textAnchor="middle" fontSize={s*0.065} fill={tier.rankColor} opacity="0.9">{level>=15?"神":level>=10?"闇":level>=6?"忍":"木"}</text><path d={`M ${cx+s*0.145} ${s*0.23} Q ${cx+s*0.19} ${s*0.28} ${cx+s*0.16} ${s*0.35}`} stroke={tier.bandanaColor} strokeWidth="3" fill="none" strokeLinecap="round"/></>):(<><ellipse cx={cx} cy={s*0.17} rx={s*0.22} ry={s*0.04} fill={tier.bandanaColor} stroke={tier.rankColor} strokeWidth="0.5"/><path d={`M ${cx-s*0.1} ${s*0.17} L ${cx} ${s*0.08} L ${cx+s*0.1} ${s*0.17}`} fill={tier.bandanaColor} stroke={tier.rankColor} strokeWidth="0.5"/><text x={cx} y={s*0.16} textAnchor="middle" fontSize={s*0.055} fill={tier.rankColor} opacity="0.9">影</text></>)}
-        {!hasHelmet&&!hasMask&&<path d={`M ${cx-s*0.145} ${s*0.2} Q ${cx-s*0.18} ${s*0.13} ${cx} ${s*0.1} Q ${cx+s*0.18} ${s*0.13} ${cx+s*0.145} ${s*0.2}`} fill={level>=10?"#0A0A0A":level>=6?"#1A0A0A":"#2A1A0A"}/>}
-        {level>=6&&!hasHelmet&&<path d={`M ${cx-s*0.14} ${s*0.13} Q ${cx-s*0.2} ${s*0.06} ${cx-s*0.15} ${s*0.02}`} stroke={level>=15?tier.rankColor:"#1A0A0A"} strokeWidth="3" fill="none" strokeLinecap="round"/>}
-        {hasWeapon&&(
-          <g style={{animation:"weaponGlow 2s ease-in-out infinite"}}>
-            {level<10?(<g transform={`translate(${cx+24},${s*0.5}) rotate(30)`}><rect x={-2} y={-s*0.18} width={4} height={s*0.18} rx={1} fill={tier.weaponColor}/><polygon points={`0,${-s*0.22} -3,${-s*0.18} 3,${-s*0.18}`} fill={tier.weaponColor}/><rect x={-3} y={0} width={6} height={s*0.03} rx={1} fill="#4A3020"/><rect x={-1.5} y={s*0.03} width={3} height={s*0.06} rx={1} fill="#8B7355"/></g>
-            ):level<15?(<g transform={`translate(${cx+20},${s*0.38}) rotate(35)`}><rect x={-1.5} y={-s*0.35} width={3} height={s*0.35} rx={1} fill={tier.weaponColor} style={{filter:`drop-shadow(0 0 4px ${tier.weaponColor})`}}/><ellipse cx={0} cy={0} rx={5} ry={3} fill="#3A2A1A"/><rect x={-2} y={0} width={4} height={s*0.1} rx={1} fill="#4A3020"/><polygon points={`0,${-s*0.37} -2,${-s*0.35} 2,${-s*0.35}`} fill="#E8E8E8"/></g>
-            ):(<><g transform={`translate(${cx+22},${s*0.36}) rotate(30)`}><rect x={-2} y={-s*0.38} width={4} height={s*0.38} rx={1} fill={tier.weaponColor} style={{filter:`drop-shadow(0 0 6px ${tier.weaponColor})`}}/><ellipse cx={0} cy={0} rx={6} ry={3} fill="#2A1A0A"/><rect x={-2.5} y={0} width={5} height={s*0.1} rx={1} fill="#3A1A0A"/><rect x={-1} y={-s*0.38} width={2} height={s*0.38} rx={1} fill="#fff" opacity="0.3"/></g>{hasDual&&<g transform={`translate(${cx-24},${s*0.4}) rotate(-25)`}><rect x={-1.5} y={-s*0.3} width={3} height={s*0.3} rx={1} fill={tier.weaponColor} opacity="0.85" style={{filter:`drop-shadow(0 0 4px ${tier.weaponColor})`}}/><ellipse cx={0} cy={0} rx={5} ry={2.5} fill="#2A1A0A"/><rect x={-2} y={0} width={4} height={s*0.08} rx={1} fill="#3A1A0A"/></g>}</>)}
+        <defs>
+          <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#00000066"/>
+          </filter>
+        </defs>
+
+        {/* ── CAPE (behind everything) ── */}
+        {hasCape && (
+          <path
+            d={`M ${cx-14} ${s*0.41} C ${cx-28} ${s*0.55} ${cx-32} ${s*0.78} ${cx-18} ${s*0.95} Q ${cx} ${s*0.98} ${cx+18} ${s*0.95} C ${cx+32} ${s*0.78} ${cx+28} ${s*0.55} ${cx+14} ${s*0.41}`}
+            fill={tier.cloakColor} stroke={`${tier.rankColor}55`} strokeWidth="0.8"
+          />
+        )}
+
+        {/* ── LEGS ── */}
+        {/* Left leg — slightly angled for dynamic stance */}
+        <path d={`M ${cx-12} ${s*0.72} L ${cx-14} ${s*0.94} Q ${cx-16} ${s*0.97} ${cx-8} ${s*0.97} L ${cx-6} ${s*0.72}`}
+          fill={level>=6?"#151020":"#1E2030"} filter="url(#softShadow)"
+        />
+        {/* Right leg */}
+        <path d={`M ${cx+6} ${s*0.72} L ${cx+8} ${s*0.94} Q ${cx+16} ${s*0.97} ${cx+14} ${s*0.97} L ${cx+12} ${s*0.72}`}
+          fill={level>=6?"#151020":"#1E2030"} filter="url(#softShadow)"
+        />
+        {/* Boot details */}
+        {level >= 3 && <>
+          <line x1={cx-15} y1={s*0.88} x2={cx-5} y2={s*0.88} stroke={tier.rankColor} strokeWidth="1" opacity="0.4"/>
+          <line x1={cx+5} y1={s*0.88} x2={cx+15} y2={s*0.88} stroke={tier.rankColor} strokeWidth="1" opacity="0.4"/>
+        </>}
+
+        {/* ── TORSO ── */}
+        <path d={`M ${cx-16} ${s*0.42} C ${cx-17} ${s*0.38} ${cx-14} ${s*0.35} ${cx} ${s*0.35} C ${cx+14} ${s*0.35} ${cx+17} ${s*0.38} ${cx+16} ${s*0.42} L ${cx+14} ${s*0.72} L ${cx-14} ${s*0.72} Z`}
+          fill={tier.cloakColor} filter="url(#softShadow)"
+        />
+        {/* Vest panel */}
+        {level >= 3 && (
+          <path d={`M ${cx-10} ${s*0.43} C ${cx-10} ${s*0.40} ${cx} ${s*0.38} ${cx+10} ${s*0.43} L ${cx+8} ${s*0.65} L ${cx-8} ${s*0.65} Z`}
+            fill={level>=10?"#180808":level>=6?"#0D1A18":"#0D180D"}
+            stroke={tier.rankColor} strokeWidth="0.4" opacity="0.9"
+          />
+        )}
+        {/* Chest symbol */}
+        {level >= 6 && (
+          <text x={cx} y={s*0.58} textAnchor="middle" fontSize={s*0.08}
+            fill={tier.rankColor} opacity="0.85" fontFamily="serif" fontWeight="bold"
+          >{level>=20?"卍":level>=15?"忍":level>=10?"闇":"忍"}</text>
+        )}
+        {/* Belt */}
+        <rect x={cx-14} y={s*0.695} width={28} height={s*0.028} rx={2}
+          fill={level>=6?tier.rankColor:"#3A2A14"} opacity="0.85"
+        />
+        {/* Belt buckle */}
+        <rect x={cx-4} y={s*0.69} width={8} height={s*0.038} rx={1.5}
+          fill={level>=6?tier.rankColor:"#4A3020"} stroke="#00000033" strokeWidth="0.5"
+        />
+
+        {/* ── LEFT ARM (relaxed, slightly out) ── */}
+        <path d={`M ${cx-14} ${s*0.43} C ${cx-20} ${s*0.44} ${cx-26} ${s*0.52} ${cx-24} ${s*0.67} L ${cx-18} ${s*0.67} C ${cx-17} ${s*0.53} ${cx-12} ${s*0.47} ${cx-10} ${s*0.43} Z`}
+          fill={tier.cloakColor}
+        />
+        {/* Left hand */}
+        <ellipse cx={cx-21} cy={s*0.685} rx={4} ry={3} fill={skinColor}/>
+
+        {/* ── RIGHT ARM (raised slightly, weapon arm) ── */}
+        <path d={`M ${cx+14} ${s*0.43} C ${cx+20} ${s*0.42} ${cx+27} ${s*0.48} ${cx+26} ${s*0.62} L ${cx+20} ${s*0.64} C ${cx+18} ${s*0.51} ${cx+12} ${s*0.46} ${cx+10} ${s*0.43} Z`}
+          fill={tier.cloakColor}
+        />
+        {/* Right hand */}
+        <ellipse cx={cx+23} cy={s*0.645} rx={4} ry={3} fill={skinColor}/>
+
+        {/* Arm wraps */}
+        {level >= 3 && <>
+          <line x1={cx-24} y1={s*0.58} x2={cx-16} y2={s*0.56} stroke={tier.rankColor} strokeWidth="1.2" opacity="0.4" strokeLinecap="round"/>
+          <line x1={cx+16} y1={s*0.54} x2={cx+24} y2={s*0.55} stroke={tier.rankColor} strokeWidth="1.2" opacity="0.4" strokeLinecap="round"/>
+        </>}
+
+        {/* ── NECK ── */}
+        <rect x={cx-5} y={s*0.33} width={10} height={s*0.045} rx={2} fill={skinColor}/>
+
+        {/* ── HEAD ── */}
+        {/* Hair / back of head */}
+        {!hasHelmet && (
+          <ellipse cx={cx} cy={s*0.24} rx={s*0.135} ry={s*0.14} fill={hairColor}/>
+        )}
+        {/* Face */}
+        <ellipse cx={cx} cy={s*0.255} rx={s*0.115} ry={s*0.125} fill={skinColor} filter="url(#softShadow)"/>
+
+        {/* Hair details */}
+        {!hasHelmet && level < 10 && (
+          <>
+            <path d={`M ${cx-s*0.13} ${s*0.2} Q ${cx-s*0.16} ${s*0.11} ${cx-s*0.08} ${s*0.1} Q ${cx} ${s*0.09} ${cx+s*0.08} ${s*0.1} Q ${cx+s*0.14} ${s*0.12} ${cx+s*0.13} ${s*0.2}`}
+              fill={hairColor}
+            />
+            {level >= 6 && (
+              <path d={`M ${cx-s*0.13} ${s*0.18} Q ${cx-s*0.19} ${s*0.1} ${cx-s*0.14} ${s*0.05}`}
+                stroke={hairColor} strokeWidth="4" fill="none" strokeLinecap="round"
+              />
+            )}
+          </>
+        )}
+
+        {/* ── MASK / FACE DETAILS ── */}
+        {hasMask ? (
+          /* Sleek half-mask */
+          <>
+            <path d={`M ${cx-s*0.11} ${s*0.245} Q ${cx-s*0.115} ${s*0.31} ${cx} ${s*0.315} Q ${cx+s*0.115} ${s*0.31} ${cx+s*0.11} ${s*0.245}`}
+              fill={level>=15?"#0D0500":"#080812"} stroke={`${tier.rankColor}66`} strokeWidth="0.5"
+            />
+            {/* Glowing eyes */}
+            <ellipse cx={cx-s*0.045} cy={s*0.245} rx={s*0.025} ry={s*0.016}
+              fill={tier.rankColor} style={{filter:`drop-shadow(0 0 4px ${tier.rankColor})`}}
+            />
+            <ellipse cx={cx+s*0.045} cy={s*0.245} rx={s*0.025} ry={s*0.016}
+              fill={tier.rankColor} style={{filter:`drop-shadow(0 0 4px ${tier.rankColor})`}}
+            />
+            {/* Mask lines */}
+            <line x1={cx-s*0.05} y1={s*0.27} x2={cx+s*0.05} y2={s*0.27} stroke={tier.rankColor} strokeWidth="0.5" opacity="0.3"/>
+          </>
+        ) : (
+          /* Normal eyes */
+          <>
+            <ellipse cx={cx-s*0.04} cy={s*0.25} rx={s*0.022} ry={s*0.018} fill="#0A0A0A"/>
+            <ellipse cx={cx+s*0.04} cy={s*0.25} rx={s*0.022} ry={s*0.018} fill="#0A0A0A"/>
+            <circle cx={cx-s*0.033} cy={s*0.248} r={s*0.006} fill="#fff" opacity="0.8"/>
+            <circle cx={cx+s*0.047} cy={s*0.248} r={s*0.006} fill="#fff" opacity="0.8"/>
+            {/* Nose */}
+            <path d={`M ${cx-3} ${s*0.268} Q ${cx} ${s*0.276} ${cx+3} ${s*0.268}`}
+              stroke="#9B7A5A" strokeWidth="0.8" fill="none"
+            />
+            {/* Mouth — slight smirk */}
+            <path d={`M ${cx-4} ${s*0.284} Q ${cx+1} ${s*0.292} ${cx+5} ${s*0.283}`}
+              stroke="#9B7A5A" strokeWidth="0.9" fill="none" strokeLinecap="round"
+            />
+          </>
+        )}
+
+        {/* Scar */}
+        {hasScar && (
+          <line x1={cx-s*0.06} y1={s*0.22} x2={cx-s*0.02} y2={s*0.29}
+            stroke={tier.rankColor} strokeWidth="1" opacity="0.55" strokeLinecap="round"
+          />
+        )}
+
+        {/* ── HEADBAND ── */}
+        {!hasHelmet ? (
+          <>
+            <rect x={cx-s*0.135} y={s*0.185} width={s*0.27} height={s*0.048} rx={4}
+              fill={tier.bandanaColor}
+            />
+            {/* Metal plate */}
+            <rect x={cx-s*0.075} y={s*0.189} width={s*0.15} height={s*0.035} rx={2.5}
+              fill={level>=6?"#2E2E3E":"#7A7A8A"} stroke={level>=3?tier.rankColor:"#555"} strokeWidth="0.5"
+            />
+            {/* Plate symbol */}
+            <text x={cx} y={s*0.217} textAnchor="middle" fontSize={s*0.052}
+              fill={tier.rankColor} opacity="0.8"
+            >{level>=15?"神":level>=10?"闇":level>=6?"忍":"木"}</text>
+            {/* Bandana tail */}
+            <path d={`M ${cx+s*0.135} ${s*0.205} C ${cx+s*0.17} ${s*0.22} ${cx+s*0.18} ${s*0.28} ${cx+s*0.155} ${s*0.34}`}
+              stroke={tier.bandanaColor} strokeWidth="3.5" fill="none" strokeLinecap="round"
+            />
+          </>
+        ) : (
+          /* Kage conical hat */
+          <>
+            <ellipse cx={cx} cy={s*0.165} rx={s*0.21} ry={s*0.038} fill={tier.bandanaColor} stroke={tier.rankColor} strokeWidth="0.5"/>
+            <path d={`M ${cx-s*0.09} ${s*0.165} L ${cx} ${s*0.072} L ${cx+s*0.09} ${s*0.165}`}
+              fill={tier.bandanaColor} stroke={tier.rankColor} strokeWidth="0.5"
+            />
+            <text x={cx} y={s*0.148} textAnchor="middle" fontSize={s*0.048} fill={tier.rankColor} opacity="0.85">影</text>
+            {/* Hat band */}
+            <line x1={cx-s*0.21} y1={s*0.165} x2={cx+s*0.21} y2={s*0.165} stroke={tier.rankColor} strokeWidth="1" opacity="0.4"/>
+          </>
+        )}
+
+        {/* ── WEAPONS ── */}
+        {level >= 3 && (
+          <g style={{animation:"weaponGlow 2.2s ease-in-out infinite"}}>
+            {level < 10 ? (
+              /* Kunai — held at side */
+              <g transform={`translate(${cx+26},${s*0.57}) rotate(25)`}>
+                <path d={`M 0 ${-s*0.14} L -1.5 0 L 0 ${s*0.02} L 1.5 0 Z`} fill={tier.weaponColor}/>
+                <rect x={-1} y={0} width={2} height={s*0.04} rx={0.5} fill="#3A2A14"/>
+                <rect x={-2} y={s*0.04} width={4} height={s*0.022} rx={1} fill="#5A4020"/>
+                <rect x={-0.8} y={s*0.062} width={1.6} height={s*0.05} rx={0.5} fill="#4A3520"/>
+              </g>
+            ) : level < 15 ? (
+              /* Katana — carried diagonally */
+              <g transform={`translate(${cx+18},${s*0.34}) rotate(28)`}>
+                {/* Blade */}
+                <path d={`M 0 ${-s*0.32} L -1.2 0 L 1.2 0 Z`}
+                  fill={tier.weaponColor} style={{filter:`drop-shadow(0 0 3px ${tier.weaponColor}66)`}}
+                />
+                {/* Edge line */}
+                <line x1={-0.3} y1={-s*0.32} x2={-0.3} y2={0} stroke="#fff" strokeWidth="0.4" opacity="0.4"/>
+                {/* Guard */}
+                <ellipse cx={0} cy={0} rx={5} ry={2.5} fill="#2A1A0A" stroke={tier.rankColor} strokeWidth="0.4"/>
+                {/* Handle */}
+                <rect x={-1.8} y={0} width={3.6} height={s*0.085} rx={1.5} fill="#3A2010"/>
+                <line x1={-1.8} y1={s*0.028} x2={1.8} y2={s*0.028} stroke={tier.rankColor} strokeWidth="0.5" opacity="0.4"/>
+                <line x1={-1.8} y1={s*0.056} x2={1.8} y2={s*0.056} stroke={tier.rankColor} strokeWidth="0.5" opacity="0.4"/>
+              </g>
+            ) : (
+              /* Legendary dual blades */
+              <>
+                <g transform={`translate(${cx+20},${s*0.32}) rotate(25)`}>
+                  <path d={`M 0 ${-s*0.36} L -1.8 0 L 1.8 0 Z`}
+                    fill={tier.weaponColor} style={{filter:`drop-shadow(0 0 5px ${tier.weaponColor})`}}
+                  />
+                  <line x1={0} y1={-s*0.36} x2={0} y2={0} stroke="#fff" strokeWidth="0.5" opacity="0.35"/>
+                  <ellipse cx={0} cy={0} rx={5.5} ry={2.5} fill="#1A0A00" stroke={tier.rankColor} strokeWidth="0.5"/>
+                  <rect x={-2} y={0} width={4} height={s*0.08} rx={1.5} fill="#1A0800"/>
+                </g>
+                {hasDual && (
+                  <g transform={`translate(${cx-20},${s*0.36}) rotate(-22)`}>
+                    <path d={`M 0 ${-s*0.28} L -1.4 0 L 1.4 0 Z`}
+                      fill={tier.weaponColor} opacity="0.9" style={{filter:`drop-shadow(0 0 4px ${tier.weaponColor})`}}
+                    />
+                    <ellipse cx={0} cy={0} rx={4.5} ry={2} fill="#1A0A00" stroke={tier.rankColor} strokeWidth="0.5"/>
+                    <rect x={-1.6} y={0} width={3.2} height={s*0.07} rx={1.5} fill="#1A0800"/>
+                  </g>
+                )}
+              </>
+            )}
           </g>
         )}
-        {level>=20&&<g style={{transformOrigin:`${cx}px ${s*0.55}px`,animation:"spin 6s linear infinite"}}><ellipse cx={cx} cy={s*0.55} rx={s*0.42} ry={s*0.12} fill="none" stroke={tier.rankColor} strokeWidth="1.5" strokeDasharray="4 6" opacity="0.5"/></g>}
+
+        {/* Orbiting ring for LEGEND */}
+        {level >= 20 && (
+          <g style={{transformOrigin:`${cx}px ${s*0.52}px`, animation:"spin 5s linear infinite"}}>
+            <ellipse cx={cx} cy={s*0.52} rx={s*0.44} ry={s*0.1}
+              fill="none" stroke={tier.rankColor} strokeWidth="1.2"
+              strokeDasharray="3 5" opacity="0.5"
+            />
+          </g>
+        )}
       </svg>
-      <div style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", background:tier.rankColor, borderRadius:20, padding:"2px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:11, letterSpacing:2, color:"#fff", whiteSpace:"nowrap", boxShadow:`0 0 10px ${tier.rankColor}88` }}>{tier.name}</div>
+
+      {/* Rank badge */}
+      <div style={{ position:"absolute", bottom:0, left:"50%", transform:"translateX(-50%)", background:tier.rankColor, borderRadius:20, padding:"2px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:11, letterSpacing:2, color:"#fff", whiteSpace:"nowrap", boxShadow:`0 0 10px ${tier.rankColor}88` }}>
+        {tier.name}
+      </div>
     </div>
   );
 }
@@ -272,7 +488,7 @@ export default function ShonenHQ() {
   const [weight, setWeight]       = useState(()=>load("shq_weight", 135));
   const [weightInput, setWeightInput] = useState(()=>String(load("shq_weight",135)));
   const [weightLog, setWeightLog] = useState(()=>load("shq_weightLog",null));
-  const [attrs, setAttrs]         = useState(()=>load("shq_attrs",{str:12,end:10,vit:11,agi:8,int:9}));
+  const [attrs, setAttrs]         = useState(()=>load("shq_attrs",{str:0,end:0,vit:0,agi:0,int:0}));
   const [xp, setXp]               = useState(()=>load("shq_xp",0));
   const [level, setLevel]         = useState(()=>load("shq_level",1));
   const [showLevelUp, setShowLevelUp] = useState(false);
