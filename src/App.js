@@ -213,7 +213,7 @@ function SetupScreen({ onComplete }) {
 function ShareCard({ profile, weight, level, streak, attrs, arc, tier, totalPct, onClose }) {
   return (
     <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(0,0,0,0.9)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:360, background:"linear-gradient(135deg,#150A02,#0A0208)", border:`2px solid ${tier.rankColor}`, borderRadius:20, overflow:"hidden", boxShadow:`0 0 40px ${tier.rankColor}44` }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:360, background:"linear-gradient(135deg,#1E0E04,#120508)", border:`2px solid ${tier.rankColor}`, borderRadius:20, overflow:"hidden", boxShadow:`0 0 40px ${tier.rankColor}44` }}>
         {/* Header */}
         <div style={{ background:`linear-gradient(135deg,${tier.rankColor}33,${tier.rankColor}11)`, padding:"20px 20px 16px", textAlign:"center", borderBottom:`1px solid ${tier.rankColor}33` }}>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:11, color:tier.rankColor, letterSpacing:4, marginBottom:4 }}>TRAINING LOG</div>
@@ -234,8 +234,8 @@ function ShareCard({ profile, weight, level, streak, attrs, arc, tier, totalPct,
             { label:"ARC",    val:arc.rank,         color:arc.color },
             { label:"PROGRESS",val:`${totalPct.toFixed(0)}%`,color:"#10B981" },
           ].map(s=>(
-            <div key={s.label} style={{ background:"#0F0608", border:`1px solid ${s.color}22`, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
-              <div style={{ fontSize:8, color:"#4A3020", letterSpacing:2, marginBottom:3 }}>{s.label}</div>
+            <div key={s.label} style={{ background:"#1A0A04", border:`1px solid ${s.color}33`, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
+              <div style={{ fontSize:8, color:"#FF6B00", letterSpacing:2, marginBottom:3 }}>{s.label}</div>
               <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, color:s.color, letterSpacing:1 }}>{s.val}</div>
             </div>
           ))}
