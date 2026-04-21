@@ -310,12 +310,9 @@ const GROCERY = {
 };
 
 const PR_LIFTS = [
-  { key:"bench",   name:"Bench Press",     icon:"🏋️", color:"#3B82F6" },
-  { key:"squat",   name:"Squat",           icon:"🦵", color:"#EF4444" },
-  { key:"deadlift",name:"Deadlift / RDL",  icon:"⚡", color:"#8B5CF6" },
-  { key:"ohp",     name:"Overhead Press",  icon:"🛡️", color:"#F59E0B" },
-  { key:"pullup",  name:"Pull-ups (reps)", icon:"💪", color:"#10B981" },
-  { key:"row",     name:"DB Row",          icon:"🔥", color:"#FF6B00" },
+  { key:"bench",   name:"Bench Press",    icon:"🏋️", color:"#3B82F6" },
+  { key:"squat",   name:"Squat",          icon:"🦵", color:"#EF4444" },
+  { key:"deadlift",name:"Deadlift / RDL", icon:"⚡", color:"#8B5CF6" },
 ];
 
 const SUPPS = [
@@ -551,8 +548,8 @@ export default function ShonenHQ() {
 
       {/* Level up overlay */}
       {showLevelUp&&(
-        <div style={{ position:"fixed", inset:0, zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.88)", backdropFilter:"blur(6px)" }}>
-          <div style={{ textAlign:"center", animation:"popIn 0.4s ease" }}>
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.88)", backdropFilter:"blur(6px)" }}>
+          <div style={{ textAlign:"center", animation:"popIn 0.4s ease", padding:"0 20px" }}>
             <div style={{ marginBottom:16 }}><NinjaAvatar level={levelUpNum} size={140}/></div>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:52, color:"#F59E0B", animation:"flicker 0.8s infinite", letterSpacing:4 }}>LEVEL UP</div>
             <div style={{ fontSize:20, color:"#F0E6D3", letterSpacing:3, marginTop:4 }}>LVL {levelUpNum} — {getNinjaTier(levelUpNum).name}</div>
@@ -654,7 +651,7 @@ export default function ShonenHQ() {
                 <button onClick={addWater} disabled={water>=WATER_GOAL} style={{ width:"100%", background:water>=WATER_GOAL?"#0A1A0A":"#3B82F622", border:`1px solid ${water>=WATER_GOAL?"#10B98133":"#3B82F644"}`, borderRadius:8, padding:"7px", color:water>=WATER_GOAL?"#10B981":"#3B82F6", fontFamily:"'Bebas Neue',sans-serif", fontSize:12, letterSpacing:2, cursor:water>=WATER_GOAL?"default":"pointer" }}>
                   {water>=WATER_GOAL?"DONE":"+ FILL"}
                 </button>
-                {water>0&&water<WATER_GOAL&&<button onClick={()=>setWater(w=>Math.max(0,w-1))} style={{ width:"100%", marginTop:4, background:"transparent", border:"none", color:"#4A3020", fontSize:9, cursor:"pointer" }}>undo</button>}
+                {water>0&&<button onClick={()=>setWater(w=>Math.max(0,w-1))} style={{ width:"100%", marginTop:4, background:"transparent", border:"none", color:"#4A3020", fontSize:9, cursor:"pointer" }}>undo last fill</button>}
               </div>
 
               {/* Supps */}
@@ -679,7 +676,7 @@ export default function ShonenHQ() {
                 <div key={attr.key} style={{ marginBottom:10 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
                     <div style={{ display:"flex", gap:6, alignItems:"center" }}><span>{attr.icon}</span><span style={{ fontSize:11, fontWeight:700, color:attr.color, letterSpacing:2 }}>{attr.label}</span><span style={{ fontSize:9, color:"#4A3020" }}>{attr.tip}</span></div>
-                    <div style={{ display:"flex", gap:6, alignItems:"center" }}><span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:17, color:attr.color }}>{Math.floor(attrs[attr.key])}</span><button onClick={()=>boostAttr(attr.key)} style={{ background:`${attr.color}22`, border:`1px solid ${attr.color}44`, borderRadius:4, padding:"1px 7px", color:attr.color, fontSize:11, fontWeight:700, cursor:"pointer" }}>+</button></div>
+                    <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:17, color:attr.color }}>{Math.floor(attrs[attr.key])}</span>
                   </div>
                   <div style={{ height:4, background:"#1A0A02", borderRadius:2, overflow:"hidden" }}><div className="stat-bar" style={{ height:"100%", width:`${Math.min(100,attrs[attr.key])}%`, background:`linear-gradient(90deg,${attr.color}44,${attr.color})`, borderRadius:2 }}/></div>
                 </div>
